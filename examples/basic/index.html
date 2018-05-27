@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Monitoring Panel{% endblock title %}
+{% block content %}
+    <header id="header">
+		<hgroup>
+			<h1 class="site_title">Monitoring Panel</h1>
+			<h2 class="section_title">Dashboard</h2>
+		</hgroup>
+	</header> <!-- end of header bar -->
+
+	<section id="secondary_bar">
+		<div class="user">
+			<p>Hello, {{ username }} | <a href="/login?status=logout">Logout</a></p>
+		</div>
+		<div class="breadcrumbs_container">
+			<article class="breadcrumbs"><a href="#">Home</a><div class="breadcrumb_divider"></div> <a class="current">Dashboard</a></article>
+		</div>
+	</section><!-- end of secondary bar -->
+
+	<aside id="sidebar" class="column">
+		<h3>Build Machines</h3>
+		<ul class="toggle tabs">
+            {% for ip, ip_info in data.iteritems() %}
+            <li class="icn_server"><a href="#machine_{{ ip }}">{{ ip }}{% if ip_info.status == 1 %}(Unknown)
+                {% elif ip_info.status == 2 %}(Online)
+                {% elif ip_info.status == 3 %}(Closed)
+                {% elif ip_info.status == 4 %}(Timeout)
+                {% else %}(Error)
+                {% endif %}
+            </a></li>
+            {% endfor %}
+		</ul>
+
+		<footer>
+			<hr />
+			<p><strong>Copyright &copy; 2018 HyperFox&reg; Solution</strong></p>
+			<p>Made by <a href="mailto:hyperfox.co@gmail.com">Hyperfox</a></p>
+		</footer>
+	</aside><!-- end of sidebar -->
+
+	<section id="main" class="column">
+        {% for ip, ip_info in data.iteritems() %}
+        <div id="machine_{{ forloop.counter }}" class="tab_content">
+            <article class="module width_full">
+                <header><h3>Basic information</h3></header>
+                <div class="module_content">
+                    <h3>IP Address: {{ ip }}</h3>
+                    <h3>Host Name: {{ ip_info.hostname }}</h3>
+                    <h3>Platform: {{ ip_info.platform }}</h3>
+                    <h3>Memory</h3>
+                    <p>Total Memory: {{ ip_info.mem_total }} Bytes</p>
+                    <p>Free Memory: {{ ip_info.mem_avail }} Bytes</p>
+                    <h3>Disk Usage</h3>
+                    {#{% for disk_name, disk_info in ip_info.disk_usage.iteritems %}
+                    <p>{{ disk_name }} Total: {{ disk_info.total }} Bytes,
+                    {{ disk_info.percent }}% used</p>
+                    {% endfor %}#}
+                </div>
+            </article><!-- end of styles article -->
+            <div class="spacer"></div>
+
+            <article class="module width_full">
+                <header><h3>Performance</h3></header>
+                <div class="block">
+                    <div class="block_content">
+                        <table class="stats" rel="line" cellpadding="0" cellspacing="0" width="100%">
+                            <thead>
+                                <tr>
+                                    <td>&nbsp;</td>
+                                    {% for percent in ip_info.cpu_percent %}
+                                    <th scope="col">{{ percent }}</th>
+                                    {% empty %}
+                                    <th scope="col">0</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                <tr>
+                                    <th>CPU percentage</th>
+                                    {% for percent in ip_info.cpu_percent %}
+                                    <td>{{ percent }}</td>
+                                    {% empty %}
+                                    <td>0</td>
+                                    {% endfor %}
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </article><!-- end of styles article -->
+            <div class="spacer"></div>
+
+            <article class="module width_full">
+                <header><h3>Processes</h3></header>
+                    <div class="block">
+                        <form action="/api" method="post" id="form_proc">
+                            <table cellspacing="0" class="tablesorter">
+                                <thead>
+                                    <tr>
+                                        <th width="10"><input type="checkbox" class="check_all" /></th>
+                                        <th>Pid</th>
+                                        <th>Name</th>
+                                        <th>Command line</th>
+                                        <th>Operation</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for process_info in ip_info.processes %}
+                                    <tr>
+                                        <td><input type="checkbox" id="checkbox_{{ ip_info.ip }}_{{ process_info[0] }}"/></td>
+                                        {% for element in process_info %}
+                                        <td>{{ element }}</td>
+                                        {% endfor %}
+                                        <td><input type="button" class="submit tiny" onclick="onTerminate('{{ip}}', {{process_info[0]}}, $(this));" value="Terminate" /></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3"><strong>Execute New Script:</strong></td>
+                                        <td>
+                                            <select class="new_proc" id="cmdline_{{ip_info.ip}}">
+                                                <option></option>
+                                                {% for name in ip_info.monitor_procs %}
+                                                <option>{{ name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <img id="img_wait_{{ ip_info.ip }}" style="display: none;" src="{% static "images/ajax-loader.gif" %}">
+                                            <input type="button" id="exec_{{ ip_info.ip }}" class="submit tiny" onclick="onExecute('{{ip}}', $('#cmdline_{{ip_info.ip}}').get(0).selectedIndex-1);" value="Execute" />
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </form>
+                    </div>
+            </article><!-- end of styles article -->
+            <div class="spacer"></div>
+        </div>
+        {% endfor %}
+    </section>
+{% endblock content %}
